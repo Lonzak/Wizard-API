@@ -1,0 +1,370 @@
+<html>
+<head>
+<style type="text/css">
+<!--
+table {color: #000000; background-color: #e9e8e2; font-family: Monospaced}
+.string {color: #cc0066}
+.keyword-directive {color: #0000e6}
+.comment {color: #888888}
+.foo {background: #FFFFFF}
+body {background: #FFFFFF}
+-->
+</style>    
+<title>Wizard API FAQ</title>
+</head>
+<body bgcolor="#FFFFFF">
+<span class="foo">
+<h1>Wizards FAQ</h1>
+<img align="right" src="logo.png"/> 
+
+<p>
+<b>Help!  Where do I start?</b>
+<br>
+If you just want to create a simple wizard with a fixed
+set of steps, do the following:
+<ol>
+    <li>Create the panels you want in your favorite Swing GUI builder</li>
+    <li>Have them subclass WizardPage</li>
+    <li>For each component on each panel that affects what the wizard 
+        will do or create (i.e. not panels, but checkboxes, text 
+        fields, combo boxes, etc.), set
+        the <code>name</code> of that component to some unique string.</li>
+    <li>On each WizardPage subclass, add a static method:
+        <ul>
+            <li><code>public static String getDescription()</code> -
+                this should return a <i>localized</i> string that
+                describes the step - keep it short.
+        </ul>
+    </li>
+    <li>Implement the one-method interface 
+        <code>WizardPage.WizardResultProducer</code>.  It is going to be
+        passed a <code>Map</code>, where the keys are the names of your
+        components, and the values are the current values in those 
+        components (i.e. if a checkbox is checked and has the name "foo",
+        if you call <code>get("foo")</code> on the map, you will get
+        Boolean.TRUE - all the standard Swing components are handled
+        appropriately).  This is where you will take the values gathered
+        into the map from user input as the user progressed through the
+        wizard, and use them to do something or create some object.
+    </li>
+    <li>Do something like: 
+        <pre>
+            Class[] clazz = new Class[] {
+                MyFirstPage.class,
+                MySecondPage.class,
+                MyThirdPage.class
+                };
+            WizardResultProducer finishIt = new MyResultProducer();
+            Object result = WizardDisplayer.showWizard (
+                WizardPage.createWizard(clazz, finishIt));
+        </pre>
+    </li>
+</ol>
+See also the <a href="quickstart.html">quickstart guide</a>.
+
+<p><b>Why pass Class objects for this stuff?</b><br>
+User interfaces need to be responsive.  A Wizard is often invoked from a menu 
+item;  most UI guidelines suggest that something should appear on screen within
+100 milliseconds.  So we don't want to construct any panels we don't know we
+need until we need them.
+
+<p>
+<b>Where are the examples?</b>
+<br>
+Check out the sources:
+<pre>
+    cvs -d:pserver:<i>YOUR_LOGIN</i>@wizard.dev.java.net:/cvs login
+    cvs -d:pserver:<i>YOUR_LOGIN</i>@wizard.dev.java.net:/cvs co wizard
+</pre>
+Look in <code>wizard/wizardPageDemo</code> for a sample of 
+using <code>WizardPage</code> to create a simple wizard;
+look in <code>wizard/WizardDemo</code> for an example of how to
+do branching and other more complex things.
+
+<p>
+<b>What is the settings map?</b><br>
+A wizard should not do anything to its environment until the user clicks the
+finish button - until then a wizard is just a thing that gathers information
+on its panels.  The map is passed to each panel, and is a place where the
+information is gathered together.
+<p>
+If you are using <code>WizardPage</code>, most of this is handled 
+automagically - if you set the name of a component (i.e. a combo box,
+text field, list, etc.), whenever the user changes it, the value
+in the component will automatically be written to the settings map,
+keyed to the name of the component (be careful not to duplicate
+component names!).
+<p>
+What the wizard really <i>does</i> or creates with that information is
+handled in the <code>finish (Map m)</code> method of the 
+<code>WizardPanelProvider</code> or 
+<code>WizardPage.WizardResultProducer</code>.
+
+
+<p>
+<b>I'm using WizardPage, and I have named components, but their initial values are 
+not being automatically written to the wizard data map.  What's wrong?</b>
+<br>
+Make sure you call <code>setName</code> on your component <i>before</i> you
+add it to the component hierarchy. <i><code>java.awt.Component</code>
+does not fire property changes when you call <code>setName()</code></i>.
+That means, if you set the name <i>after</i> you add it to your 
+<code>WizardPage</code>, the system has no way of knowing about it, and 
+it won't have written anything into the wizard data map when the component
+was first added.
+
+
+<p>
+<b>How do I disable the next button?</b>
+<br>
+Call <code>WizardController.setProblem(&quot;[problem-string]&quot;)</code> on the
+<code>WizardController</code> instance that was passed when your panel was
+created.  The string that is passed
+will appear at the bottom of the wizard.  It should be something that describes
+what information is missing or incorrect, and how it is incorrect.
+
+
+<p>
+<b>What is the basis for the ui/button set/the way wizards look?</b>
+<br>
+The Java Look and Feel guidelines for wizards.  A lot of time, expertise and
+effort went into figuring out how to create wizards that somebody's
+grandmother could use in creating those - experimenting with different
+designs and putting real users in front of them.  They are Good Stuff&trade;.
+
+
+<p>
+<b>You said it's based on the JLF.  Does that mean my wizards will look like
+   Metal Look and Feel if I don't write a UI myself?</b>
+<br>
+No, it uses standard components and will look fine on any look and feel.  It
+follows <i>usability</i> guidelines - they do not dictate the appearance of
+components.  You may want to provide a custom background image for the side
+panels in wizards, with your application's logo.  See below for how to do that.
+
+<p>
+<b>How do I change the background image on the left side of the wizard dialog?</b>
+<br>
+Add an Image to UIManager under the key <code>wizard.sidebar.image</code>.
+Or set the system property <code>wizard.sidebar.image</code> to a URL that points
+to the image file inside a jar that is on the classpath.  The image must be in
+a format readable by <code>ImageIO.read()</code>.
+
+
+<p>
+<b>How do I disable the next button without showing a string to the user?</b>
+<br>
+First, <i>don't do that.</i>  Even if you think it's
+obvious what's wrong, that doesn't mean it will be obvious to the user.  Really.
+You are not your target audience (if you were, you wouldn't be writing a wizard).
+<p>
+Consistency is good.  If whenever something is wrong, some blue text appears in
+the wizard, that's an added cue that something is wrong that makes the wizard
+easy to use (not to mention that you can tell them how to fix it).  It is 
+better for all wizard panels to behave the same way when something is wrong.
+Things that silently fail and wizards that can't be completed make people go 
+out and download other software that is friendlier.  Seriously.
+<p>
+Now, if you've read all that and you are <i>absolutely determined</i> to disable
+the Next button without telling the user why you're doing that...call 
+<code>setProblem(&quot;  &quot;);</code> on the <code>WizardController</code>.
+
+
+<p>
+<b>But <code>setProblem(&quot; &quot;)</code> looks like a hack...</b>
+<br>
+It is one.  Tell the user what's wrong instead.
+
+
+<p>
+<b>How do I disable the Prev button?</b>
+<br>
+You don't.  There is only one reason for wanting that:  The wizard has done
+something irrevocable (changed files on disk, etc.) before the user clicked
+finish.  The entire point of this library is to make it easy to create wizards
+that <i>never do things like that</i> (it's a great way to have 
+<i>really</i> nasty bugs that eat user data permanently, etc.).
+<p>
+You can <i>temporarily</i> disable all navigation with 
+<code>WizardPanelProvider.setBusy()</code>.  This is for use when, for example,
+some lengthy background process is happening and navigation should 
+temporarily be disabled while it completes.
+<p>
+Now, if you're <i>absolutely determined</i> to do that, clear your mind and
+stare at the <code>Wizard</code> class for ten uninterrupted minutes.
+The answer will come in a blinding flash.
+
+
+<p>
+<b>It says the wizard UI is pluggable.  How do I provide my own implementation
+of <code>WizardDisplayer</code>?</b>
+<br>
+Write an implementation of <code>WizardDisplayer</code> which has a public,
+no argument constructor.  Set the system property 
+&quot;WizardDisplayer.default&quot; to the fully qualified name of the class.
+<p>
+Longer term, it would be nicer to use the NetBeans lookup library to do this - 
+then a jar on the classpath just needs to have a file in 
+<code>META-INF/services</code> naming the class, which is much cleaner.
+<br><i>This item is subject to change</i>
+
+    
+<p>
+<b>Why is the logo a cat?</b>
+<br>
+Because little wizard hats look silly.
+
+<p>
+<b>Can I create a wizard with only Next/Prev buttons?</b>
+<br>
+Yes, if you provide your own implementation of <code>WizardDisplayer</code>.
+But there are a lot of reasons why the default UI is the way it is and 
+most of them come from research on how to make very, very usable wizards.
+Be sure you really want to do this.
+
+<p>
+<b>How do I display a summary page per the JLF spec, that says what the
+wizard has done after the Finish button has been pressed?</b>
+<br>
+Return a Summary object from the <code>finish()</code> method of
+WizardPanelProvider or WizardResultProducer, whichever you implemented.
+
+<p>
+<b>Can the wizard do work in the background and show a progress bar while
+<code>finish()</code> runs, when the user presses Finish?</b>
+<br>
+Yes.  Return a DeferredWizardResult from the initial <code>finish()</code> method of
+WizardPanelProvider or WizardResultProducer, whichever you implemented.  It
+will be passed a ResultProgressHandle with which you can set the status text
+and progress as your code runs.
+
+<p>
+<b>When should I use WizardPage and when should I use WizardPanelProvider?</b>
+<br>
+WizardPage is pretty handy for most things.  The main difference is with
+WizardPanelProvider, you don't have to subclass a Swing panel component &mdash;
+you can just create a new JPanel, add what you want and return it.  This is
+useful for legacy code, migrating from other wizard frameworks, or if you are
+dealing with components that you can't or don't want to modify.
+
+<p>
+<b>Some of the validation I need to do for a page in my wizard 
+needs to connect to the network or do some other expensive operation.
+It's too slow to do on every keystroke/button-press/whatever.
+Can I defer that validation until the user presses the next button?</b>
+<br>
+Yes.  The panel in question can implement WizardPanelNavResult, which can
+be called on a background thread to validate, show a progress bar, etc.,
+when the user presses the Next button.
+
+<p>
+<b>I am using WizardPanel, but I am using some custom components that it
+doesn't know how to automatically listen to.  What do I do?</b>
+<br>
+Override WizardPanel.createCustomComponentListener(), and implement 
+CustomComponentListener to do the listening and notify the WizardPage on
+user input.
+
+<p/>
+<b>How do I do multiple branch points?</b><br/>
+It is pretty simple.  Think of each <i>fixed</i> set of steps in a wizard as 
+one wizard;  a wizard with more branch points simply is a meta-wizard that 
+routes you to different fixed-step wizards depending on what is in the 
+data map.
+<p/>
+So, say you have a wizard that always has the same two panels at the start, 
+then one branch, then another branch:
+
+<pre>
+    /-C1-D1-E1-F1
+   / 
+A-<b>B</b>
+   \       /-E2a-F2a-G2a
+    \-C2-<b>D2</b>
+           \-E2b-F2b-G2b
+</pre>
+(elements in <b>bold</b> above are <i>branch points</i> - places where your
+code will need to make a decision about which path to follow)
+<p/>
+So, first you create a wizard for each contiguous sequence - you can use 
+either WizardPanelProvider, or one of the methods that creates a Wizard 
+from a sequence of WizardPage instances (the latter is probably simpler).
+<p/>
+Then you implement one WizardBranchController for each branch point;  it gets told 
+what step you are on and is passed the Map of the gathered settings 
+in <code>getWizardForStep()</code> or <code>getPanelProviderForStep()</code>
+So you just check if you are on B, and if so check the Map for a value 
+that will indicate whether the C1 sequence or the C2 sequence was chosen;  and you also check if you are on D2, and if so, check the Map to see if the user has indicated the next sequence should be the E2a sequence or the E2b sequence.
+<p/>
+Say you have each step implemented as a WizardPage (so A and B and all 
+the .class objects below are instances of WizardPage).  Full source can be
+found in CVS in the MultiBranchDemo/ subdirectory of the project.
+
+<pre>
+<span class="keyword-directive">public</span> <span class="keyword-directive">class</span> Brancher <span class="keyword-directive">extends</span> WizardBranchController {
+    <span class="comment">//Probably you really want to create these lazily if they are </span>
+    <span class="comment">//needed, but the example is clearer this way...&lt;/font&gt;</span>
+    Class[] c1Sequence = <span class="keyword-directive">new</span> Class[]{
+        C1.<span class="keyword-directive">class</span>, D1.<span class="keyword-directive">class</span>, E1.<span class="keyword-directive">class</span>, F1.<span class="keyword-directive">class</span>, 
+    };
+    <span class="comment">//Create a wizard for this sequence of steps</span>
+    Wizard c1 = WizardPage.createWizard(c1Sequence, WizardResultProducer.NO_OP);
+
+    <span class="comment">//This will be one of the secondary branches</span>
+    Class[] e2aSequence = <span class="keyword-directive">new</span> Class[]{
+        E2a.<span class="keyword-directive">class</span>, F2a.<span class="keyword-directive">class</span>, G2a.<span class="keyword-directive">class</span>,
+    };
+    Wizard e2a = WizardPage.createWizard (e2aSequence, WizardResultProducer.NO_OP);
+    
+    <span class="comment">//This will be the other secondary branch</span>
+    Class[] e2bSequence = <span class="keyword-directive">new</span> Class[] {
+        E2b.<span class="keyword-directive">class</span>, F2b.<span class="keyword-directive">class</span>, G2b.<span class="keyword-directive">class</span>,
+    };
+    Wizard e2b = WizardPage.createWizard (e2bSequence, WizardResultProducer.NO_OP);
+    
+    <span class="comment">//Now make another branching wizard for our second set of steps</span>
+    Wizard secondBranch = <span class="keyword-directive">new</span> Brancher2().createWizard();
+
+    <span class="keyword-directive">public</span> <span class="keyword-directive">static</span> <span class="keyword-directive">void</span> main(String[] args) {
+        Brancher brancher = <span class="keyword-directive">new</span> Brancher();
+        Wizard wizard = brancher.createWizard();
+        WizardDisplayer.showWizard (wizard);
+    }
+    
+    <span class="keyword-directive">public</span> Brancher() {
+        <span class="comment">//create the base pages - these are also WizardPage subclasses</span>
+        <span class="keyword-directive">super</span>(<span class="keyword-directive">new</span> WizardPage[]{<span class="keyword-directive">new</span> A(), <span class="keyword-directive">new</span> B()});
+    }
+    
+    <span class="keyword-directive">public</span> Wizard getWizardForStep (String step, Map data) {
+       <span class="comment">//The class name is the default ID for instantiated WizardPages</span>
+       <span class="keyword-directive">if</span> (<span class="string">&quot;</span><span class="string">multibranchdemo.Brancher$B</span><span class="string">&quot;</span>.equals(step)) {
+            <span class="keyword-directive">if</span> (Boolean.TRUE.equals(data.get(<span class="string">&quot;</span><span class="string">foo</span><span class="string">&quot;</span>))) { <span class="comment">//check some data in the map to decide</span>
+                <span class="keyword-directive">return</span> c1;
+            } <span class="keyword-directive">else</span> {
+                <span class="keyword-directive">return</span> secondBranch;
+            }
+        }
+        <span class="keyword-directive">return</span> <span class="keyword-directive">null</span>;
+    }
+    
+    <span class="keyword-directive">private</span> <span class="keyword-directive">class</span> Brancher2 <span class="keyword-directive">extends</span> WizardBranchController {
+        Brancher2 () {
+            <span class="keyword-directive">super</span> (<span class="keyword-directive">new</span> WizardPage[] { <span class="keyword-directive">new</span> C2(), <span class="keyword-directive">new</span> D2() });
+        }
+        
+        <span class="keyword-directive">public</span> Wizard getWizardForStep (String step, Map data) {
+            <span class="keyword-directive">if</span> (<span class="string">&quot;</span><span class="string">multibranchdemo.Brancher$D2</span><span class="string">&quot;</span>.equals(step)) {
+                <span class="keyword-directive">if</span> (Boolean.TRUE.equals(data.get(<span class="string">&quot;</span><span class="string">bar</span><span class="string">&quot;</span>))) { <span class="comment">//check some data in the map to decide</span>
+                    <span class="keyword-directive">return</span> e2a;
+                } <span class="keyword-directive">else</span> {
+                    <span class="keyword-directive">return</span> e2b;
+                }
+            }
+            <span class="keyword-directive">return</span> <span class="keyword-directive">null</span>;
+        }
+    }
+</pre>
+</span>
+</body>
+</html>
