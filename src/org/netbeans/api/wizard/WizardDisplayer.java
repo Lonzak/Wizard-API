@@ -117,7 +117,7 @@ public abstract class WizardDisplayer {
                             Class.forName (wdProp).newInstance();
                 } catch (Exception e) {
                     System.err.println("Could not instantiate " + wdProp);
-                    System.setProperty (SYSPROP_KEY, null);
+                    System.clearProperty (SYSPROP_KEY);
                     e.printStackTrace();
                 }
             }

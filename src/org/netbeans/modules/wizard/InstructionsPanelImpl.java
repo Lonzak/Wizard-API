@@ -133,12 +133,12 @@ public class InstructionsPanelImpl extends JComponent implements WizardObserver,
                 } catch (IOException ioe) {
                     System.err.println("Could not load wizard image " + //NOI18N
                             ioe.getMessage());
-                    System.setProperty("wizard.sidebar.image", null); //NOI18N
+                    System.clearProperty("wizard.sidebar.image"); //NOI18N
                     img = null; //error loading img, set to null to use default
                 }
             } else { //URL was not successfully parsed, set img to null to use default
                 System.err.println("Bad URL for wizard image " + imgStr); //NOI18N
-                System.setProperty("wizard.sidebar.image", null); //NOI18N
+                System.clearProperty("wizard.sidebar.image"); //NOI18N
                 img = null;
             }
         }

@@ -40,7 +40,7 @@
         <property file="${basedir}/nbproject/private/private.properties"/>
         <javadoc overview="${basedir}/doc/api/overview.html"
                  destdir="dist/javadoc" 
-                 source="1.4" 
+                 source="1.5" 
                  notree="${javadoc.notree}" 
                  use="${javadoc.use}" 
                  nonavbar="${javadoc.nonavbar}" 
@@ -83,7 +83,7 @@
         author="Tim Boudreau" 
         displayName="Wizard Library" 
         license="cddl"
-        minJDK="1.4" 
+        minJDK="1.5" 
         sourceJar="dist\wizard-src.zip" 
         docsJar="www\WizardAPI.zip"/>
         
